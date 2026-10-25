@@ -1,5 +1,8 @@
 export type Language = 'ur' | 'ar' | 'en';
 
+export type StudioMode = 'camera' | 'screen' | 'pip';
+export type PipPosition = 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left';
+
 export interface BayanSession {
   id: string;
   title: string;
@@ -45,6 +48,25 @@ export interface RecordedBayan {
   downloadsAllowed: boolean;
   fileSizeBytes?: number;
   viewsCount: number;
+}
+
+export interface AudioBayan {
+  id: string;
+  title: string;
+  titleUrdu: string;
+  titleArabic?: string;
+  category: string;
+  categoryUrdu: string;
+  series?: string;
+  seriesUrdu?: string;
+  speaker: string;
+  speakerUrdu: string;
+  recordedDate: string;
+  duration: string;
+  durationSeconds: number;
+  audioUrl: string;
+  fileSizeBytes?: number;
+  downloadsCount: number;
 }
 
 export interface Attendee {

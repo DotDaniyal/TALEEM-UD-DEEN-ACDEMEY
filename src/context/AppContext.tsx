@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Language, BayanSession, RecordedBayan, SiteConfig, AuditLogItem } from '../types';
+import { Language, BayanSession, RecordedBayan, AudioBayan, SiteConfig, AuditLogItem } from '../types';
 import { useTranslation } from '../utils/translations';
 
 export type PageView =
@@ -8,6 +8,7 @@ export type PageView =
   | 'join'
   | 'upcoming'
   | 'recordings'
+  | 'audio-library'
   | 'recording-details'
   | 'speaker'
   | 'contact'
@@ -37,6 +38,12 @@ interface AppContextType {
   refreshRecordings: () => Promise<void>;
   saveRecording: (recording: Partial<RecordedBayan>) => Promise<RecordedBayan>;
   deleteRecording: (id: string) => Promise<void>;
+  audioBayans: AudioBayan[];
+  refreshAudioBayans: () => Promise<void>;
+  currentAudioTrack: AudioBayan | null;
+  setCurrentAudioTrack: (track: AudioBayan | null) => void;
+  audioPlaying: boolean;
+  setAudioPlaying: (playing: boolean) => void;
   isAdmin: boolean;
   adminToken: string | null;
   loginAdmin: (token: string) => void;
@@ -79,6 +86,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [siteConfig, setSiteConfig] = useState<SiteConfig>(defaultSiteConfig);
   const [sessions, setSessions] = useState<BayanSession[]>([]);
   const [recordings, setRecordings] = useState<RecordedBayan[]>([]);
+  const [audioBayans, setAudioBayans] = useState<AudioBayan[]>([]);
+  const [currentAudioTrack, setCurrentAudioTrack] = useState<AudioBayan | null>(null);
+  const [audioPlaying, setAudioPlaying] = useState<boolean>(false);
   const [auditLogs, setAuditLogs] = useState<AuditLogItem[]>([]);
   const [adminToken, setAdminToken] = useState<string | null>(() => localStorage.getItem('islamic_bayan_token'));
   const [bannerNotice, setBannerNotice] = useState<string | null>(null);
@@ -122,6 +132,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const refreshAudioBayans = async () => {
+    try {
+      const res = await fetch('/api/audio-bayans');
+      if (res.ok) {
+        const data = await res.json();
+        setAudioBayans(data);
+      }
+    } catch {
+      // Offline fallback
+    }
+  };
+
   const refreshSiteConfig = async () => {
     try {
       const res = await fetch('/api/site-config');
@@ -149,6 +171,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     refreshSessions();
     refreshRecordings();
+    refreshAudioBayans();
     refreshSiteConfig();
     refreshAuditLogs();
 
@@ -266,6 +289,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         auditLogs,
         bannerNotice,
         setBannerNotice,
+        audioBayans,
+        refreshAudioBayans,
+        currentAudioTrack,
+        setCurrentAudioTrack,
+        audioPlaying,
+        setAudioPlaying,
       }}
     >
       {children}

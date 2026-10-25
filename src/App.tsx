@@ -7,6 +7,7 @@ import { LiveBayanStudio } from './pages/LiveBayanStudio';
 import { JoinBayanPage } from './pages/JoinBayanPage';
 import { UpcomingBayansPage } from './pages/UpcomingBayansPage';
 import { RecordedBayansPage } from './pages/RecordedBayansPage';
+import { AudioLibraryPage } from './pages/AudioLibraryPage';
 import { BayanDetailsPage } from './pages/BayanDetailsPage';
 import { AboutSpeakerPage } from './pages/AboutSpeakerPage';
 import { ContactPage } from './pages/ContactPage';
@@ -14,10 +15,11 @@ import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage';
 import { TermsPage } from './pages/TermsPage';
 import { AdminLoginPage } from './pages/AdminLoginPage';
 import { AdminDashboard } from './pages/AdminDashboard';
+import { AudioPlayerBar } from './components/AudioPlayerBar';
 import { Check } from 'lucide-react';
 
 const MainContent: React.FC = () => {
-  const { currentView, isAdmin, bannerNotice, setBannerNotice } = useApp();
+  const { currentView, isAdmin, bannerNotice, setBannerNotice, currentAudioTrack } = useApp();
 
   const renderView = () => {
     switch (currentView) {
@@ -31,6 +33,8 @@ const MainContent: React.FC = () => {
         return <UpcomingBayansPage />;
       case 'recordings':
         return <RecordedBayansPage />;
+      case 'audio-library':
+        return <AudioLibraryPage />;
       case 'recording-details':
         return <BayanDetailsPage />;
       case 'speaker':
@@ -73,11 +77,12 @@ const MainContent: React.FC = () => {
       )}
 
       {/* Main Container */}
-      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+      <main className={`flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full ${currentAudioTrack ? 'pb-28' : ''}`}>
         {renderView()}
       </main>
 
       <Footer />
+      <AudioPlayerBar />
     </div>
   );
 };

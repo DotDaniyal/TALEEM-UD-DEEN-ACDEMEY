@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { calculateTimeRemaining, generateShareableLinks } from '../utils/bayan-logic';
-import { ArrowLeft, ArrowRight, Share2, Copy, Check, Video, Calendar, Clock, BookOpen } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Share2, Copy, Check, Video, Calendar, Clock, BookOpen, Headphones, Play, Pause } from 'lucide-react';
 
 export const HomePage: React.FC = () => {
-  const { t, lang, dir, setCurrentView, sessions, recordings, setSelectedRecordingId, setSelectedRoomCode, siteConfig } = useApp();
+  const { t, lang, dir, setCurrentView, sessions, recordings, audioBayans, currentAudioTrack, setCurrentAudioTrack, audioPlaying, setAudioPlaying, setSelectedRecordingId, setSelectedRoomCode, siteConfig } = useApp();
   const [copied, setCopied] = useState(false);
 
   // Find next upcoming or currently live session
@@ -284,6 +284,82 @@ export const HomePage: React.FC = () => {
               </div>
             </article>
           ))}
+        </div>
+      </section>
+
+      {/* SECTION 4: AUDIO LECTURES HIGHLIGHT (Dedicated Library Access) */}
+      <section className="bg-gradient-to-br from-[#0F382A]/5 via-white to-[#C5A059]/10 rounded-2xl border border-[#C5A059]/30 p-6 sm:p-8 space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+          <div>
+            <div className="text-xs uppercase tracking-widest text-[#C5A059] font-sans flex items-center gap-1.5">
+              <Headphones className="w-3.5 h-3.5" />
+              <span>صوتی کتب خانہ و خطبات</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-urdu font-bold text-[#0F382A] mt-1">
+              منتخب صوتی خطبات و درسی بیانات
+            </h2>
+            <p className="text-xs sm:text-sm text-stone-600 font-urdu mt-1 max-w-xl">
+              تفسیرِ قرآن، آدابِ زندگی اور خطباتِ جمعہ کے اعلیٰ صوتی ریکارڈنگز۔ بغیر ویڈیو کے پرسکون سماعت کے لیے۔
+            </p>
+          </div>
+
+          <button
+            onClick={() => setCurrentView('audio-library')}
+            className="px-4 py-2 text-xs font-semibold text-white bg-[#0F382A] hover:bg-[#0B281E] rounded-md transition-colors flex items-center gap-1.5 cursor-pointer shrink-0"
+          >
+            <span>مکمل صوتی ذخیرہ</span>
+            <ArrowIcon className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {audioBayans.slice(0, 2).map((audio) => {
+            const isPlaying = currentAudioTrack?.id === audio.id && audioPlaying;
+            return (
+              <div
+                key={audio.id}
+                className="bg-white rounded-xl border border-stone-200 p-4 flex items-center justify-between gap-4 hover:border-[#C5A059]/60 transition-colors shadow-2xs"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <button
+                    onClick={() => {
+                      if (currentAudioTrack?.id === audio.id) {
+                        setAudioPlaying(!audioPlaying);
+                      } else {
+                        setCurrentAudioTrack(audio);
+                        setAudioPlaying(true);
+                      }
+                    }}
+                    className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 cursor-pointer transition-transform active:scale-95 ${
+                      isPlaying
+                        ? 'bg-[#C5A059] text-stone-900'
+                        : 'bg-[#0F382A] text-white hover:bg-[#0B281E]'
+                    }`}
+                  >
+                    {isPlaying ? <Pause className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current ms-0.5" />}
+                  </button>
+                  <div className="min-w-0">
+                    <span className="text-[10px] text-[#0F382A] bg-emerald-50 px-2 py-0.5 rounded font-urdu">
+                      {audio.categoryUrdu}
+                    </span>
+                    <h4 className="text-sm font-bold font-urdu text-stone-900 truncate mt-1">
+                      {audio.titleUrdu}
+                    </h4>
+                    <p className="text-[11px] text-stone-500 font-sans">
+                      {audio.duration} · {audio.recordedDate}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setCurrentView('audio-library')}
+                  className="text-xs text-[#0F382A] font-medium hover:underline shrink-0"
+                >
+                  تفصیل
+                </button>
+              </div>
+            );
+          })}
         </div>
       </section>
     </div>

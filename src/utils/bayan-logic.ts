@@ -3,7 +3,7 @@
  * Completely decoupled from React/DOM for deterministic unit testing.
  */
 
-import { BayanSession, RecordedBayan } from '../types';
+import { BayanSession, RecordedBayan, AudioBayan, PipPosition } from '../types';
 
 /**
  * Generates a clean, readable and unguessable room code
@@ -81,7 +81,6 @@ export function calculateTimeRemaining(
   }
 
   if (diff <= 0) {
-    // If within 2 hours past scheduled time, treat as currently active
     const isNow = Math.abs(diff) < 2 * 60 * 60 * 1000;
     return {
       isPast: !isNow,
@@ -133,7 +132,7 @@ export function formatDuration(seconds: number): string {
 }
 
 /**
- * Filter recorded lectures by search query and category
+ * Filter recorded video lectures by search query and category
  */
 export function filterLectures(
   lectures: RecordedBayan[],
@@ -163,6 +162,84 @@ export function filterLectures(
       lec.speaker.toLowerCase().includes(q)
     );
   });
+}
+
+/**
+ * Filter audio lectures by search keyword, category, and series
+ */
+export function filterAudioLectures(
+  audios: AudioBayan[],
+  query: string,
+  category: string,
+  series?: string
+): AudioBayan[] {
+  const q = query.trim().toLowerCase();
+  const cat = category.trim().toLowerCase();
+  const ser = series ? series.trim().toLowerCase() : '';
+
+  return audios.filter((audio) => {
+    const matchesCat =
+      cat === 'all' ||
+      cat === '' ||
+      audio.category.toLowerCase() === cat ||
+      audio.categoryUrdu.toLowerCase() === cat;
+
+    if (!matchesCat) return false;
+
+    if (ser && ser !== 'all') {
+      const matchSeries =
+        (audio.series && audio.series.toLowerCase() === ser) ||
+        (audio.seriesUrdu && audio.seriesUrdu.toLowerCase() === ser);
+      if (!matchSeries) return false;
+    }
+
+    if (!q) return true;
+
+    return (
+      audio.title.toLowerCase().includes(q) ||
+      audio.titleUrdu.toLowerCase().includes(q) ||
+      (audio.titleArabic && audio.titleArabic.toLowerCase().includes(q)) ||
+      audio.speaker.toLowerCase().includes(q) ||
+      audio.speakerUrdu.toLowerCase().includes(q)
+    );
+  });
+}
+
+/**
+ * Resolves Tailwind positioning classes for Mode C Picture-in-Picture window
+ */
+export function getPipPositionClasses(position: PipPosition): string {
+  switch (position) {
+    case 'top-left':
+      return 'top-4 start-4';
+    case 'top-right':
+      return 'top-4 end-4';
+    case 'bottom-left':
+      return 'bottom-16 start-4';
+    case 'bottom-right':
+    default:
+      return 'bottom-16 end-4';
+  }
+}
+
+/**
+ * Screen share privacy verification helper
+ */
+export function validateScreenSharePrivacy(displaySurface?: string): {
+  isFullDisplay: boolean;
+  adviceUrdu: string;
+  adviceEn: string;
+} {
+  const isFullDisplay = displaySurface === 'monitor';
+  return {
+    isFullDisplay,
+    adviceUrdu: isFullDisplay
+      ? 'آپ پوری کمپیوٹر اسکرین شیئر کر رہے ہیں۔ شرکاء اس اسکرین پر موجود تمام کھڑکیوں کو دیکھ سکتے ہیں۔'
+      : 'آپ نے مخصوص براؤزر ٹیب یا ونڈو شیئر کی ہے، دیگر نجی ونڈوز پوشیدہ ہیں۔',
+    adviceEn: isFullDisplay
+      ? 'You are sharing your entire screen. Attendees can see all active windows on this display.'
+      : 'You are sharing a specific tab or application window. Unrelated files remain private.',
+  };
 }
 
 /**
@@ -222,7 +299,6 @@ export function formatIslamicDateEstimate(isoDateString: string): {
     year: 'numeric',
   });
 
-  // Astronomical approximation: Hijri = (Gregorian - 622) * (33 / 32)
   const gYear = effectiveDate.getFullYear();
   const hijriYearEstimate = Math.floor((gYear - 622) * (33 / 32));
 

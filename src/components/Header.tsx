@@ -12,6 +12,7 @@ export const Header: React.FC = () => {
     { id: 'live', label: t.navLive },
     { id: 'upcoming', label: t.navUpcoming },
     { id: 'recordings', label: t.navRecordings },
+    { id: 'audio-library', label: t.navAudioLibrary },
     { id: 'speaker', label: t.navSpeaker },
   ];
 

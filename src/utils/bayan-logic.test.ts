@@ -6,11 +6,14 @@ import {
   calculateTimeRemaining,
   formatDuration,
   filterLectures,
+  filterAudioLectures,
+  getPipPositionClasses,
+  validateScreenSharePrivacy,
   canAccessRecording,
   validateBayanSession,
   formatIslamicDateEstimate,
 } from './bayan-logic.ts';
-import { RecordedBayan } from '../types';
+import { RecordedBayan, AudioBayan } from '../types';
 
 test('generateRoomCode produces clean formatted code with prefix', () => {
   const code = generateRoomCode('tafseer');
@@ -120,6 +123,68 @@ test('filterLectures filters by category and search keyword', () => {
   const categoryResults = filterLectures(mockLectures, '', 'Seerah');
   assert.equal(categoryResults.length, 1);
   assert.equal(categoryResults[0].id, '2');
+});
+
+test('filterAudioLectures filters audio records by category and series', () => {
+  const mockAudios: AudioBayan[] = [
+    {
+      id: 'a1',
+      title: 'Friday Sermon: Importance of Salah',
+      titleUrdu: 'خطبہ جمعہ: نماز کی اہمیت',
+      category: 'Friday Bayan',
+      categoryUrdu: 'جمعہ کا بیان',
+      series: 'Weekly Sermons',
+      seriesUrdu: 'ہفتہ وار خطبات',
+      speaker: 'Dr. Muhammad Farooq',
+      speakerUrdu: 'ڈاکٹر محمد فاروق',
+      recordedDate: '2026-04-17',
+      duration: '38:15',
+      durationSeconds: 2295,
+      audioUrl: '',
+      downloadsCount: 120,
+    },
+    {
+      id: 'a2',
+      title: 'Tazkiyah: Cleansing the Heart',
+      titleUrdu: 'تزکیہ: دل کی صفائی',
+      category: 'Tazkiyah',
+      categoryUrdu: 'اصلاح و تزکیہ',
+      series: 'Spiritual Path',
+      seriesUrdu: 'راہِ سلوک',
+      speaker: 'Dr. Muhammad Farooq',
+      speakerUrdu: 'ڈاکٹر محمد فاروق',
+      recordedDate: '2026-04-10',
+      duration: '42:00',
+      durationSeconds: 2520,
+      audioUrl: '',
+      downloadsCount: 210,
+    },
+  ];
+
+  const searchRes = filterAudioLectures(mockAudios, 'نماز', 'all');
+  assert.equal(searchRes.length, 1);
+  assert.equal(searchRes[0].id, 'a1');
+
+  const catRes = filterAudioLectures(mockAudios, '', 'اصلاح و تزکیہ');
+  assert.equal(catRes.length, 1);
+  assert.equal(catRes[0].id, 'a2');
+});
+
+test('getPipPositionClasses returns correct corner classes', () => {
+  assert.ok(getPipPositionClasses('top-left').includes('top-4'));
+  assert.ok(getPipPositionClasses('top-right').includes('end-4'));
+  assert.ok(getPipPositionClasses('bottom-left').includes('bottom-16'));
+  assert.ok(getPipPositionClasses('bottom-right').includes('bottom-16'));
+});
+
+test('validateScreenSharePrivacy identifies entire screen vs window', () => {
+  const full = validateScreenSharePrivacy('monitor');
+  assert.equal(full.isFullDisplay, true);
+  assert.ok(full.adviceUrdu.includes('پوری کمپیوٹر اسکرین'));
+
+  const win = validateScreenSharePrivacy('window');
+  assert.equal(win.isFullDisplay, false);
+  assert.ok(win.adviceUrdu.includes('مخصوص براؤزر ٹیب'));
 });
 
 test('validateBayanSession checks title requirement and date format', () => {

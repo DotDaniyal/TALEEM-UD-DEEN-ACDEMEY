@@ -3,7 +3,7 @@ import http from 'http';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { WebSocketServer, WebSocket } from 'ws';
-import { BayanSession, RecordedBayan, SiteConfig, AuditLogItem } from './src/types';
+import { BayanSession, RecordedBayan, AudioBayan, SiteConfig, AuditLogItem, StudioMode, PipPosition } from './src/types';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -146,6 +146,99 @@ let recordedBayans: RecordedBayan[] = [
   },
 ];
 
+let audioBayans: AudioBayan[] = [
+  {
+    id: 'audio-01',
+    title: 'Friday Khutbah: True Wealth and Contentment of the Soul',
+    titleUrdu: 'خطبہ جمعہ: حقیقی دولت اور قناعتِ قلب',
+    titleArabic: 'خطبة الجمعة: الغنى الحقيقي وقناعة القلب',
+    category: 'Friday Sermon',
+    categoryUrdu: 'خطباتِ جمعہ',
+    series: 'Friday Sermons 2026',
+    seriesUrdu: 'خطباتِ جمعۃ المبارک ۲۰۲۶ء',
+    speaker: 'Dr. Muhammad Farooq',
+    speakerUrdu: 'ڈاکٹر محمد فاروق',
+    recordedDate: '2026-04-17',
+    duration: '38:40',
+    durationSeconds: 2320,
+    audioUrl: 'https://cdn.islamicfinder.org/audio/quran/abdulbaset-mujawwad/001.mp3',
+    fileSizeBytes: 28000000,
+    downloadsCount: 1420,
+  },
+  {
+    id: 'audio-02',
+    title: 'Purification of Heart: Guarding the Tongue from Slander and Backbiting',
+    titleUrdu: 'اصلاح و تزکیہ: زبان کی حفاظت اور غیبت و بہتان کے نقصانات',
+    titleArabic: 'تزكية النفس وحفظ اللسان عن الغيبة',
+    category: 'Tazkiyah',
+    categoryUrdu: 'اصلاح و تزکیہ',
+    series: 'Purification Series',
+    seriesUrdu: 'اصلاحِ باطن و روحانی تربیت',
+    speaker: 'Dr. Muhammad Farooq',
+    speakerUrdu: 'ڈاکٹر محمد فاروق',
+    recordedDate: '2026-04-10',
+    duration: '45:15',
+    durationSeconds: 2715,
+    audioUrl: 'https://cdn.islamicfinder.org/audio/quran/abdulbaset-mujawwad/002.mp3',
+    fileSizeBytes: 33000000,
+    downloadsCount: 1890,
+  },
+  {
+    id: 'audio-03',
+    title: 'Surah Al-Hujurat: Etiquettes of Social Life and Mutual Brotherhood',
+    titleUrdu: 'تفسیر سورۃ الحجرات: معاشرتی آداب اور اسلامی اخوت کے احکام',
+    titleArabic: 'تفسير سورة الحجرات وآداب الأخوة',
+    category: 'Tafseer',
+    categoryUrdu: 'تفسیرِ قرآن',
+    series: 'Quranic Pearls',
+    seriesUrdu: 'دروسِ فہمِ قرآن',
+    speaker: 'Dr. Muhammad Farooq',
+    speakerUrdu: 'ڈاکٹر محمد فاروق',
+    recordedDate: '2026-03-27',
+    duration: '52:10',
+    durationSeconds: 3130,
+    audioUrl: 'https://cdn.islamicfinder.org/audio/quran/abdulbaset-mujawwad/055.mp3',
+    fileSizeBytes: 38000000,
+    downloadsCount: 2340,
+  },
+  {
+    id: 'audio-04',
+    title: 'Prophetic Sunnahs of Daily Living: Sleep, Awakening, and Eating',
+    titleUrdu: 'روزمرہ مسنون معمولات: سونے، جاگنے اور کھانے کی نبوی سنتیں',
+    titleArabic: 'السنن النبوية في الحياة اليومية',
+    category: 'Sunnah & Adab',
+    categoryUrdu: 'سنت و اخلاق',
+    series: 'Living the Sunnah',
+    seriesUrdu: 'احیائے سنت و آدابِ معاشرت',
+    speaker: 'Dr. Muhammad Farooq',
+    speakerUrdu: 'ڈاکٹر محمد فاروق',
+    recordedDate: '2026-03-15',
+    duration: '41:20',
+    durationSeconds: 2480,
+    audioUrl: 'https://cdn.islamicfinder.org/audio/quran/abdulbaset-mujawwad/067.mp3',
+    fileSizeBytes: 30000000,
+    downloadsCount: 1650,
+  },
+  {
+    id: 'audio-05',
+    title: 'Supplications of the Prophets in the Quran: Seeking Forgiveness and Refuge',
+    titleUrdu: 'قرآنی دعائیں: انبیاء علیہم السلام کی مناجات اور استغفار کے اسباق',
+    titleArabic: 'أدعية الأنبياء في القرآن الكريم',
+    category: 'Dua & Munajat',
+    categoryUrdu: 'دعائیں و مناجات',
+    series: 'Supplication Pearls',
+    seriesUrdu: 'مجموعۂ مناجات و دعائے ماثورہ',
+    speaker: 'Dr. Muhammad Farooq',
+    speakerUrdu: 'ڈاکٹر محمد فاروق',
+    recordedDate: '2026-03-05',
+    duration: '34:50',
+    durationSeconds: 2090,
+    audioUrl: 'https://cdn.islamicfinder.org/audio/quran/abdulbaset-mujawwad/112.mp3',
+    fileSizeBytes: 25000000,
+    downloadsCount: 3120,
+  },
+];
+
 let auditLogs: AuditLogItem[] = [
   {
     id: 'log-1',
@@ -172,6 +265,9 @@ interface ActiveRoom {
   isLive: boolean;
   isScreenSharing: boolean;
   isRecording: boolean;
+  studioMode: StudioMode;
+  pipPosition: PipPosition;
+  pipVisible: boolean;
   hostWs: WebSocket | null;
   hostName: string;
   attendees: Map<string, RoomAttendee>;
@@ -197,6 +293,9 @@ function getOrCreateRoom(code: string, bayanId: string = ''): ActiveRoom {
       isLive: false,
       isScreenSharing: false,
       isRecording: false,
+      studioMode: 'camera',
+      pipPosition: 'bottom-right',
+      pipVisible: true,
       hostWs: null,
       hostName: '',
       attendees: new Map(),
@@ -257,6 +356,9 @@ wss.on('connection', (ws: WebSocket) => {
               isLive: room.isLive,
               isScreenSharing: room.isScreenSharing,
               isRecording: room.isRecording,
+              studioMode: room.studioMode,
+              pipPosition: room.pipPosition,
+              pipVisible: room.pipVisible,
               attendees: attendeeList,
               messages: room.messages,
             },
@@ -386,6 +488,23 @@ wss.on('connection', (ws: WebSocket) => {
             isLive: room.isLive,
             isScreenSharing: room.isScreenSharing,
             isRecording: room.isRecording,
+          },
+        });
+      } else if (type === 'studio-mode-changed') {
+        const room = rooms.get(currentRoomCode);
+        if (!room) return;
+        if (payload.studioMode) room.studioMode = payload.studioMode;
+        if (payload.pipPosition) room.pipPosition = payload.pipPosition;
+        if (payload.pipVisible !== undefined) room.pipVisible = payload.pipVisible;
+        if (payload.isScreenSharing !== undefined) room.isScreenSharing = payload.isScreenSharing;
+
+        broadcastToRoom(room, {
+          type: 'studio-mode-changed',
+          payload: {
+            studioMode: room.studioMode,
+            pipPosition: room.pipPosition,
+            pipVisible: room.pipVisible,
+            isScreenSharing: room.isScreenSharing,
           },
         });
       }
@@ -561,6 +680,33 @@ app.delete('/api/recordings/:id', (req: Request, res: Response) => {
   });
 
   res.json({ success: true, removedId: removed.id });
+});
+
+app.get('/api/audio-bayans', (_req: Request, res: Response) => {
+  res.json(audioBayans);
+});
+
+app.post('/api/audio-bayans', (req: Request, res: Response) => {
+  const newAudio: AudioBayan = {
+    id: 'audio-' + Date.now(),
+    title: req.body.title || 'Audio Bayan',
+    titleUrdu: req.body.titleUrdu || 'صوتی بیان',
+    titleArabic: req.body.titleArabic,
+    category: req.body.category || 'General',
+    categoryUrdu: req.body.categoryUrdu || 'عام خطاب',
+    series: req.body.series,
+    seriesUrdu: req.body.seriesUrdu,
+    speaker: req.body.speaker || siteConfig.speakerName,
+    speakerUrdu: req.body.speakerUrdu || siteConfig.speakerNameUrdu,
+    recordedDate: req.body.recordedDate || new Date().toISOString().split('T')[0],
+    duration: req.body.duration || '35:00',
+    durationSeconds: req.body.durationSeconds || 2100,
+    audioUrl: req.body.audioUrl || 'https://cdn.islamicfinder.org/audio/quran/abdulbaset-mujawwad/001.mp3',
+    fileSizeBytes: req.body.fileSizeBytes || 25000000,
+    downloadsCount: 1,
+  };
+  audioBayans.unshift(newAudio);
+  res.status(201).json(newAudio);
 });
 
 app.get('/api/audit-logs', (_req: Request, res: Response) => {
