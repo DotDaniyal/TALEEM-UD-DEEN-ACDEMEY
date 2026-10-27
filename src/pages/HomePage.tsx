@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { calculateTimeRemaining, generateShareableLinks } from '../utils/bayan-logic';
-import { ArrowLeft, ArrowRight, Share2, Copy, Check, Video, Calendar, Clock, BookOpen, Headphones, Play, Pause } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Share2, Copy, Check, Radio, Calendar, Clock, BookOpen, Headphones, Play, Pause, Tv } from 'lucide-react';
 
 export const HomePage: React.FC = () => {
-  const { t, lang, dir, setCurrentView, sessions, recordings, audioBayans, currentAudioTrack, setCurrentAudioTrack, audioPlaying, setAudioPlaying, setSelectedRecordingId, setSelectedRoomCode, siteConfig } = useApp();
+  const { t, lang, dir, setCurrentView, sessions, recordings, audioBayans, currentAudioTrack, setCurrentAudioTrack, audioPlaying, setAudioPlaying, setSelectedRecordingId, setSelectedRoomCode, siteConfig, youtubeState, setSelectedYouTubeVideo } = useApp();
   const [copied, setCopied] = useState(false);
 
   // Find next upcoming or currently live session
@@ -85,7 +85,7 @@ export const HomePage: React.FC = () => {
                   onClick={() => handleJoinSession(activeSession.roomCode)}
                   className="px-5 py-3 text-xs sm:text-sm font-semibold text-[#0F382A] bg-[#C5A059] hover:bg-[#d6b26c] rounded-md transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-xs"
                 >
-                  <Video className="w-4 h-4 shrink-0" />
+                  <Radio className="w-4 h-4 text-[#C5A059] shrink-0" />
                   <span>{t.joinLiveNow}</span>
                   <ArrowIcon className="w-4 h-4 shrink-0" />
                 </button>
@@ -278,11 +278,76 @@ export const HomePage: React.FC = () => {
                   <span>{t.playLecture}</span>
                 </button>
 
-                <span className="text-[11px] text-stone-400 font-sans">
-                  {lecture.viewsCount} مشاہدات
-                </span>
               </div>
             </article>
+          ))}
+        </div>
+      </section>
+
+      {/* SECTION 3.5: YOUTUBE OFFICIAL CHANNEL INTEGRATION FEATURED */}
+      <section className="space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-stone-200 pb-4">
+          <div>
+            <div className="text-xs uppercase tracking-widest text-[#C5A059] font-sans flex items-center gap-1.5">
+              <Tv className="w-4 h-4" />
+              <span>یوٹیوب آفیشل چینل انٹیگریشن</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-urdu font-bold text-[#0F382A] mt-1">
+              مفتی فیصل حیات - یوٹیوب ویڈیو آرکائیو
+            </h2>
+            <p className="text-xs sm:text-sm text-stone-600 font-urdu mt-1 max-w-xl">
+              یوٹیوب چینل کے تمام خودکار سنک شدہ بیانات، دروسِ قرآن اور شارٹس۔
+            </p>
+          </div>
+
+          <button
+            onClick={() => setCurrentView('youtube-library')}
+            className="px-4 py-2 text-xs font-semibold text-white bg-[#0F382A] hover:bg-[#0B281E] rounded-md transition-colors flex items-center gap-1.5 cursor-pointer shrink-0"
+          >
+            <span>تمام یوٹیوب ویڈیوز ({youtubeState?.videos.length || 0})</span>
+            <ArrowIcon className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {(youtubeState?.videos || []).slice(0, 3).map((vid) => (
+            <div
+              key={vid.id}
+              onClick={() => {
+                setSelectedYouTubeVideo(vid);
+                setCurrentView('youtube-library');
+              }}
+              className="group bg-white rounded-2xl border border-stone-200 hover:border-[#0F382A] overflow-hidden shadow-xs hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col"
+            >
+              <div className="relative aspect-video bg-stone-900 overflow-hidden">
+                <img
+                  src={vid.thumbnailUrl}
+                  alt={vid.title}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+                <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                  <div className="w-10 h-10 bg-[#0F382A]/90 text-[#C5A059] rounded-full flex items-center justify-center group-hover:scale-110 transition-transform shadow-md">
+                    <Play className="w-5 h-5 fill-current ml-0.5" />
+                  </div>
+                </div>
+                <span className="absolute bottom-2 right-2 px-2 py-0.5 bg-black/80 text-white text-xs font-mono font-medium rounded-md">
+                  {vid.duration}
+                </span>
+              </div>
+
+              <div className="p-4 space-y-2 flex-1 flex flex-col justify-between">
+                <h3 className="text-sm font-bold text-stone-900 group-hover:text-[#0F382A] transition-colors leading-snug line-clamp-2">
+                  {lang === 'ur' && vid.titleUrdu ? vid.titleUrdu : vid.title}
+                </h3>
+                <div className="flex items-center justify-between text-xs text-stone-500 pt-2 border-t border-stone-100">
+                  <span className="flex items-center gap-1">
+                    <Calendar className="w-3.5 h-3.5 text-[#C5A059]" />
+                    {new Date(vid.publishedAt).toLocaleDateString()}
+                  </span>
+                  <span>{vid.viewCount.toLocaleString()} views</span>
+                </div>
+              </div>
+            </div>
           ))}
         </div>
       </section>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { generateShareableLinks } from '../utils/bayan-logic';
-import { Share2, Copy, Check, ArrowLeft, ArrowRight, Video, Mic, Volume2 } from 'lucide-react';
+import { Share2, Copy, Check, ArrowLeft, ArrowRight, Radio, Mic, Volume2 } from 'lucide-react';
 
 export const JoinBayanPage: React.FC = () => {
   const { t, lang, dir, selectedRoomCode, setSelectedRoomCode, setCurrentView, sessions, siteConfig } = useApp();
@@ -105,7 +105,7 @@ export const JoinBayanPage: React.FC = () => {
             type="submit"
             className="w-full py-3.5 text-sm font-semibold text-white bg-[#0F382A] hover:bg-[#0B281E] rounded-md transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-xs"
           >
-            <Video className="w-4 h-4" />
+            <Radio className="w-4 h-4 text-[#C5A059]" />
             <span>{t.joinSessionButton}</span>
             <ArrowIcon className="w-4 h-4" />
           </button>

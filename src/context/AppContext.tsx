@@ -1,5 +1,17 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Language, BayanSession, RecordedBayan, AudioBayan, SiteConfig, AuditLogItem } from '../types';
+import {
+  Language,
+  BayanSession,
+  RecordedBayan,
+  AudioBayan,
+  SiteConfig,
+  AuditLogItem,
+  YouTubeDataState,
+  YouTubeConfig,
+  YouTubeVideo,
+  YouTubePlaylist,
+  YouTubeSyncLog,
+} from '../types';
 import { useTranslation } from '../utils/translations';
 
 export type PageView =
@@ -8,8 +20,10 @@ export type PageView =
   | 'join'
   | 'upcoming'
   | 'recordings'
+  | 'youtube-library'
   | 'audio-library'
   | 'recording-details'
+  | 'youtube-video'
   | 'speaker'
   | 'contact'
   | 'privacy'
@@ -51,20 +65,33 @@ interface AppContextType {
   auditLogs: AuditLogItem[];
   bannerNotice: string | null;
   setBannerNotice: (msg: string | null) => void;
+
+  // YouTube Integration Context Fields
+  youtubeState: YouTubeDataState | null;
+  refreshYouTubeState: () => Promise<void>;
+  updateYouTubeConfig: (configUpdate: Partial<YouTubeConfig>) => Promise<void>;
+  triggerYouTubeSync: () => Promise<{ success: boolean; log: YouTubeSyncLog }>;
+  toggleYouTubeVideoFeatured: (videoId: string) => Promise<void>;
+  toggleYouTubeVideoHidden: (videoId: string) => Promise<void>;
+  toggleYouTubePlaylistHidden: (playlistId: string) => Promise<void>;
+  selectedYouTubeVideo: YouTubeVideo | null;
+  setSelectedYouTubeVideo: (video: YouTubeVideo | null) => void;
+  selectedYouTubePlaylist: YouTubePlaylist | null;
+  setSelectedYouTubePlaylist: (playlist: YouTubePlaylist | null) => void;
 }
 
 const defaultSiteConfig: SiteConfig = {
-  siteName: 'Islamic Bayan Online',
-  siteNameUrdu: 'اسلامی بیانات آن لائن',
-  siteNameArabic: 'منصة المحاضرات الإسلامية',
-  speakerName: 'Dr. Muhammad Farooq (Father)',
-  speakerNameUrdu: 'ڈاکٹر محمد فاروق (والد محترم)',
-  speakerTitle: 'Senior Scholar & Teacher of Hadith',
-  speakerTitleUrdu: 'سینئر استادِ حدیث و علومِ شریعت',
-  speakerBio: 'Dedicated to teaching classical Islamic texts, Quranic tafseer, and spiritual character building for over 35 years. Graduated in Islamic studies and continues to mentor students and families worldwide.',
-  speakerBioUrdu: 'گزشتہ ۳۵ برس سے زائد عرصے سے علومِ قرآن و سنت، تزکیہ نفس اور اخلاقی تربیت کی تدریس میں مصروف عمل ہیں۔ دنیا بھر کے طالبانِ خیر کے لیے باقاعدہ مجالس کا اہتمام فرماتے ہیں۔',
+  siteName: 'TALEEM UD DEEN ACADEMY',
+  siteNameUrdu: 'تعلیم الدین اکیڈمی',
+  siteNameArabic: 'أكاديمية تعليم الدين',
+  speakerName: 'Mufti Faisal Hayat',
+  speakerNameUrdu: 'مفتی فیصل حیات',
+  speakerTitle: 'Senior Islamic Scholar & Founder',
+  speakerTitleUrdu: 'فاضلِ دین، استادِ حدیث و سرپرستِ اعلیٰ',
+  speakerBio: 'Dedicated to teaching classical Islamic texts, Quranic tafseer, Hadith, and spiritual character building. Founder and principal director of Taleem Ud Deen Academy.',
+  speakerBioUrdu: 'کئی دہائیوں سے قرآن و سنت، تفسیرِ قرآن، احادیثِ نبویہ اور تزکیہ نفس کی تدریس سے وابستہ ہیں۔ تعلیم الدین اکیڈمی کے بانی و سرپرست اعلیٰ ہیں۔',
   speakerPhotoUrl: '/src/assets/images/speaker_portrait_1792917987190.jpg',
-  contactEmail: 'contact@islamic-bayan.online',
+  contactEmail: 'info@taleemuddeen.academy',
   contactPhone: '+92 300 1234567',
   whatsappCommunityLink: 'https://chat.whatsapp.com/sample-community',
   donationAccount: 'PK12-MEZN-0000-1111-2222',
@@ -93,6 +120,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [adminToken, setAdminToken] = useState<string | null>(() => localStorage.getItem('islamic_bayan_token'));
   const [bannerNotice, setBannerNotice] = useState<string | null>(null);
 
+  // YouTube State
+  const [youtubeState, setYoutubeState] = useState<YouTubeDataState | null>(null);
+  const [selectedYouTubeVideo, setSelectedYouTubeVideo] = useState<YouTubeVideo | null>(null);
+  const [selectedYouTubePlaylist, setSelectedYouTubePlaylist] = useState<YouTubePlaylist | null>(null);
+
   const t = useTranslation(lang);
   const dir = t.dir as 'rtl' | 'ltr';
 
@@ -106,6 +138,88 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     document.documentElement.lang = lang;
     document.documentElement.dir = dir;
   }, [lang, dir]);
+
+  const refreshYouTubeState = async () => {
+    try {
+      const res = await fetch('/api/youtube/state');
+      if (res.ok) {
+        const data = await res.json();
+        setYoutubeState(data);
+      }
+    } catch {
+      // Offline fallback
+    }
+  };
+
+  const updateYouTubeConfig = async (configUpdate: Partial<YouTubeConfig>) => {
+    try {
+      const res = await fetch('/api/youtube/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(configUpdate),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setYoutubeState(data);
+        setBannerNotice(t.settingsSaved);
+      }
+    } catch (err) {
+      console.error('Failed to update YouTube config:', err);
+    }
+  };
+
+  const triggerYouTubeSync = async () => {
+    try {
+      const res = await fetch('/api/youtube/sync', { method: 'POST' });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.state) setYoutubeState(data.state);
+        return { success: data.success, log: data.log };
+      }
+      throw new Error('Sync endpoint returned error');
+    } catch (err: any) {
+      return {
+        success: false,
+        log: {
+          id: 'log-err-' + Date.now(),
+          timestamp: new Date().toISOString(),
+          status: 'error',
+          videosImported: 0,
+          videosUpdated: 0,
+          playlistsImported: 0,
+          message: 'Failed to communicate with YouTube sync server.',
+          details: err?.message,
+        },
+      };
+    }
+  };
+
+  const toggleYouTubeVideoFeatured = async (videoId: string) => {
+    try {
+      await fetch(`/api/youtube/videos/${videoId}/featured`, { method: 'PATCH' });
+      await refreshYouTubeState();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const toggleYouTubeVideoHidden = async (videoId: string) => {
+    try {
+      await fetch(`/api/youtube/videos/${videoId}/hidden`, { method: 'PATCH' });
+      await refreshYouTubeState();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const toggleYouTubePlaylistHidden = async (playlistId: string) => {
+    try {
+      await fetch(`/api/youtube/playlists/${playlistId}/hidden`, { method: 'PATCH' });
+      await refreshYouTubeState();
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   // Initial data loading from server
   const refreshSessions = async () => {
@@ -174,6 +288,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     refreshAudioBayans();
     refreshSiteConfig();
     refreshAuditLogs();
+    refreshYouTubeState();
 
     // Check URL parameters for direct join links like /join?session=xyz
     const params = new URLSearchParams(window.location.search);
@@ -295,6 +410,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setCurrentAudioTrack,
         audioPlaying,
         setAudioPlaying,
+        youtubeState,
+        refreshYouTubeState,
+        updateYouTubeConfig,
+        triggerYouTubeSync,
+        toggleYouTubeVideoFeatured,
+        toggleYouTubeVideoHidden,
+        toggleYouTubePlaylistHidden,
+        selectedYouTubeVideo,
+        setSelectedYouTubeVideo,
+        selectedYouTubePlaylist,
+        setSelectedYouTubePlaylist,
       }}
     >
       {children}

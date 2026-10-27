@@ -115,3 +115,70 @@ export interface AuditLogItem {
   user: string;
   details: string;
 }
+
+export interface YouTubeVideo {
+  id: string; // YouTube Video ID (e.g., dQw4w9WgXcQ)
+  title: string;
+  titleUrdu?: string;
+  description: string;
+  publishedAt: string; // ISO date string
+  thumbnailUrl: string;
+  thumbnailHighUrl?: string;
+  duration: string; // e.g., "14:20" or "0:45"
+  durationSeconds: number;
+  isShort: boolean;
+  viewCount: number;
+  likeCount?: number;
+  youtubeUrl: string;
+  playlistIds: string[];
+  featured?: boolean;
+  hidden?: boolean;
+  category?: string;
+  categoryUrdu?: string;
+}
+
+export interface YouTubePlaylist {
+  id: string; // YouTube Playlist ID (e.g., PL...)
+  title: string;
+  titleUrdu?: string;
+  description: string;
+  thumbnailUrl: string;
+  itemCount: number;
+  hidden?: boolean;
+  updatedAt: string;
+}
+
+export interface YouTubeConfig {
+  channelHandle: string; // e.g. "@MuftiFaisalHayat"
+  channelId: string; // e.g. "UC..."
+  channelTitle: string;
+  channelTitleUrdu: string;
+  apiKey: string; // Server side secret
+  hasApiKey: boolean; // Safe boolean sent to frontend
+  autoSyncEnabled: boolean;
+  syncIntervalMinutes: number;
+  lastSyncAt: string | null;
+  nextSyncAt: string | null;
+  status: 'idle' | 'syncing' | 'error' | 'success';
+  lastError?: string | null;
+}
+
+export interface YouTubeSyncLog {
+  id: string;
+  timestamp: string;
+  status: 'success' | 'partial' | 'error';
+  videosImported: number;
+  videosUpdated: number;
+  playlistsImported: number;
+  message: string;
+  details?: string;
+}
+
+export interface YouTubeDataState {
+  config: YouTubeConfig;
+  videos: YouTubeVideo[];
+  playlists: YouTubePlaylist[];
+  syncLogs: YouTubeSyncLog[];
+  totalVideosCount: number;
+  totalPlaylistsCount: number;
+}

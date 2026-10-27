@@ -12,8 +12,8 @@ export const Logo: React.FC<LogoProps> = ({
   className = '',
   size = 'md',
   showText = true,
-  siteNameUrdu = 'اسلامی بیانات آن لائن',
-  siteNameEn = 'Islamic Bayan Online',
+  siteNameUrdu = 'تعلیم الدین اکیڈمی',
+  siteNameEn = 'TALEEM UD DEEN ACADEMY',
 }) => {
   const iconSizes = {
     sm: 'w-7 h-7',

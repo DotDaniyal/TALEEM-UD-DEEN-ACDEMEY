@@ -12,6 +12,7 @@ export const Header: React.FC = () => {
     { id: 'live', label: t.navLive },
     { id: 'upcoming', label: t.navUpcoming },
     { id: 'recordings', label: t.navRecordings },
+    { id: 'youtube-library', label: t.navYouTubeLibrary },
     { id: 'audio-library', label: t.navAudioLibrary },
     { id: 'speaker', label: t.navSpeaker },
   ];
@@ -30,7 +31,7 @@ export const Header: React.FC = () => {
           className="flex items-center gap-2.5 text-start focus-visible:outline-2 focus-visible:outline-[#0F382A] rounded-md shrink-0 cursor-pointer"
           aria-label={t.siteName}
         >
-          <Logo size="md" siteNameUrdu={t.siteName} siteNameEn="Islamic Bayan Online" />
+          <Logo size="md" siteNameUrdu={t.siteName} siteNameEn="TALEEM UD DEEN ACADEMY" />
         </button>
 
         {/* Zone 2: Desktop Navigation Links */}

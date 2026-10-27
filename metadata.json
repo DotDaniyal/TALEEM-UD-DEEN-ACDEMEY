@@ -1,8 +1,7 @@
 {
-  "name": "Islamic Bayan Online",
-  "description": "A premium, production-ready online Islamic lecture platform with live streaming, real-time communication, screen sharing, lecture recording, and archived bayans.",
+  "name": "Taleem Ud Deen Academy",
+  "description": "TALEEM UD DEEN ACADEMY - Official Islamic live bayan streaming, audio archives, YouTube video integration, and Google Sheets CMS platform.",
   "requestFramePermissions": [
-    "camera",
     "microphone",
     "display-capture"
   ],

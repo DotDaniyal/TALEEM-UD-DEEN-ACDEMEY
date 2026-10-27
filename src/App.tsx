@@ -7,6 +7,7 @@ import { LiveBayanStudio } from './pages/LiveBayanStudio';
 import { JoinBayanPage } from './pages/JoinBayanPage';
 import { UpcomingBayansPage } from './pages/UpcomingBayansPage';
 import { RecordedBayansPage } from './pages/RecordedBayansPage';
+import { YouTubeVideoLibrary } from './pages/YouTubeVideoLibrary';
 import { AudioLibraryPage } from './pages/AudioLibraryPage';
 import { BayanDetailsPage } from './pages/BayanDetailsPage';
 import { AboutSpeakerPage } from './pages/AboutSpeakerPage';
@@ -33,6 +34,8 @@ const MainContent: React.FC = () => {
         return <UpcomingBayansPage />;
       case 'recordings':
         return <RecordedBayansPage />;
+      case 'youtube-library':
+        return <YouTubeVideoLibrary />;
       case 'audio-library':
         return <AudioLibraryPage />;
       case 'recording-details':

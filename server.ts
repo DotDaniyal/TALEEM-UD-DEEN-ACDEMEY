@@ -3,7 +3,9 @@ import http from 'http';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { WebSocketServer, WebSocket } from 'ws';
-import { BayanSession, RecordedBayan, AudioBayan, SiteConfig, AuditLogItem, StudioMode, PipPosition } from './src/types';
+import { BayanSession, RecordedBayan, AudioBayan, SiteConfig, AuditLogItem } from './src/types';
+import { youtubeService } from './src/services/youtube-service.js';
+import { sheetsService } from './src/services/sheets-service.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -14,19 +16,19 @@ const PORT = parseInt(process.env.PORT || '3000', 10);
 
 app.use(express.json({ limit: '50mb' }));
 
-// Initial Seed Data with dignified Islamic lectures
+// Initial Seed Data - Taleem Ud Deen Academy
 let siteConfig: SiteConfig = {
-  siteName: 'Islamic Bayan Online',
-  siteNameUrdu: 'اسلامی بیانات آن لائن',
-  siteNameArabic: 'منصة المحاضرات الإسلامية',
-  speakerName: 'Dr. Muhammad Farooq (Father)',
-  speakerNameUrdu: 'ڈاکٹر محمد فاروق (والد محترم)',
-  speakerTitle: 'Senior Scholar & Teacher of Hadith',
-  speakerTitleUrdu: 'سینئر استادِ حدیث و علومِ شریعت',
-  speakerBio: 'Dedicated to teaching classical Islamic texts, Quranic tafseer, and spiritual character building for over 35 years. Graduated in Islamic studies and continues to mentor students and families worldwide.',
-  speakerBioUrdu: 'گزشتہ ۳۵ برس سے زائد عرصے سے علومِ قرآن و سنت، تزکیہ نفس اور اخلاقی تربیت کی تدریس میں مصروف عمل ہیں۔ دنیا بھر کے طالبانِ خیر کے لیے ہفتہ وار باقاعدہ مجالس کا اہتمام فرماتے ہیں۔',
+  siteName: 'TALEEM UD DEEN ACADEMY',
+  siteNameUrdu: 'تعلیم الدین اکیڈمی',
+  siteNameArabic: 'أكاديمية تعليم الدين',
+  speakerName: 'Mufti Faisal Hayat',
+  speakerNameUrdu: 'مفتی فیصل حیات',
+  speakerTitle: 'Senior Islamic Scholar & Founder',
+  speakerTitleUrdu: 'فاضلِ دین، استادِ حدیث و سرپرستِ اعلیٰ',
+  speakerBio: 'Dedicated to teaching classical Islamic texts, Quranic tafseer, Hadith, and spiritual character building. Founder and principal director of Taleem Ud Deen Academy.',
+  speakerBioUrdu: 'کئی دہائیوں سے قرآن و سنت، تفسیرِ قرآن، احادیثِ نبویہ اور تزکیہ نفس کی تدریس سے وابستہ ہیں۔ تعلیم الدین اکیڈمی کے بانی و سرپرست اعلیٰ ہیں۔',
   speakerPhotoUrl: '/src/assets/images/speaker_portrait_1792917987190.jpg',
-  contactEmail: 'contact@islamic-bayan.online',
+  contactEmail: 'info@taleemuddeen.academy',
   contactPhone: '+92 300 1234567',
   whatsappCommunityLink: 'https://chat.whatsapp.com/sample-community',
   donationAccount: 'PK12-MEZN-0000-1111-2222',
@@ -41,9 +43,9 @@ let bayanSessions: BayanSession[] = [
     titleArabic: 'تفسير سورة الكهف وعبر الزمان',
     description: 'A comprehensive study of the four core trials mentioned in Surah Al-Kahf (Faith, Wealth, Knowledge, and Power) and prophetic remedies.',
     descriptionUrdu: 'سورۃ الکہف کے چار بنیادی آزمائشوں (ایمان، دولت، علم اور اقتدار) کا تفصیلی مطالعہ اور نبوی حکمتیں جن سے مومن سرخرو ہوتا ہے۔',
-    speakerName: 'Dr. Muhammad Farooq',
-    speakerNameUrdu: 'ڈاکٹر محمد فاروق',
-    scheduledAt: new Date(Date.now() + 1000 * 60 * 60 * 4).toISOString(), // 4 hours from now
+    speakerName: 'Mufti Faisal Hayat',
+    speakerNameUrdu: 'مفتی فیصل حیات',
+    scheduledAt: new Date(Date.now() + 1000 * 60 * 60 * 4).toISOString(),
     status: 'scheduled',
     roomCode: 'kahf-live-2026',
     isRecorded: true,
@@ -63,9 +65,9 @@ let bayanSessions: BayanSession[] = [
     titleArabic: 'الإخلاص وتزكية النفس',
     description: 'Foundations of spiritual well-being, overcoming pride and ostentation, and purifying intentions in worship and family life.',
     descriptionUrdu: 'ریاکاری اور تکبر کے خاتمے، نیتوں کی درستگی اور عبادات میں خشوع و خضوع کے حصول پر فکری و روحانی گفتگو۔',
-    speakerName: 'Dr. Muhammad Farooq',
-    speakerNameUrdu: 'ڈاکٹر محمد فاروق',
-    scheduledAt: new Date(Date.now() + 1000 * 60 * 60 * 28).toISOString(), // tomorrow
+    speakerName: 'Mufti Faisal Hayat',
+    speakerNameUrdu: 'مفتی فیصل حیات',
+    scheduledAt: new Date(Date.now() + 1000 * 60 * 60 * 28).toISOString(),
     status: 'scheduled',
     roomCode: 'tazkiyah-heart',
     isRecorded: true,
@@ -88,8 +90,8 @@ let recordedBayans: RecordedBayan[] = [
     titleArabic: 'تربية الأبناء في العصر الرقمي',
     description: 'Practical steps for parents to instill faith, love of the Prophet (pbuh), and digital discipline at home with gentleness and wisdom.',
     descriptionUrdu: 'والدین کے لیے حکمت آمیز اور عملی رہنما اصول تاکہ بچوں کے دلوں میں محبتِ الٰہی، محبتِ رسول اور اخلاقی شعور بیدار کیا جا سکے۔',
-    speaker: 'Dr. Muhammad Farooq',
-    speakerUrdu: 'ڈاکٹر محمد فاروق',
+    speaker: 'Mufti Faisal Hayat',
+    speakerUrdu: 'مفتی فیصل حیات',
     recordedDate: '2026-04-10',
     duration: '54:12',
     durationSeconds: 3252,
@@ -109,8 +111,8 @@ let recordedBayans: RecordedBayan[] = [
     titleArabic: 'شرح حديث إنما الأعمال بالنيات',
     description: 'In-depth linguistic and jurisprudential analysis of the most fundamental hadith governing all actions in Islam.',
     descriptionUrdu: 'تمام انسانی اعمال کا دارومدار نیتوں پر ہے، اس عظیم الشان حدیث مبارکہ کی فقہی، فکری اور روحانی جہات کا احاطہ۔',
-    speaker: 'Dr. Muhammad Farooq',
-    speakerUrdu: 'ڈاکٹر محمد فاروق',
+    speaker: 'Mufti Faisal Hayat',
+    speakerUrdu: 'مفتی فیصل حیات',
     recordedDate: '2026-04-03',
     duration: '48:30',
     durationSeconds: 2910,
@@ -122,27 +124,6 @@ let recordedBayans: RecordedBayan[] = [
     downloadsAllowed: true,
     fileSizeBytes: 380000000,
     viewsCount: 512,
-  },
-  {
-    id: 'rec-03',
-    title: 'The Greatness of Ramadan and Night of Power (Laylatul Qadr)',
-    titleUrdu: 'عظمتِ رمضان اور شبِ قدر کی فضیلت و برکات',
-    titleArabic: 'فضل شهر رمضان المبارك وليلة القدر',
-    description: 'Preparing the heart for the blessed month of fasting, repentance, and seeking Allah’s boundless mercy.',
-    descriptionUrdu: 'رمضان المبارک کے استقبال، گناہوں سے توبہ اور شب قدر کی تلاش کے آداب پر فکر انگیز درس۔',
-    speaker: 'Dr. Muhammad Farooq',
-    speakerUrdu: 'ڈاکٹر محمد فاروق',
-    recordedDate: '2026-03-20',
-    duration: '62:15',
-    durationSeconds: 3735,
-    category: 'Worship',
-    categoryUrdu: 'عبادات و فضائل',
-    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-    thumbnailUrl: '/src/assets/images/islamic_calligraphy_art_1792917984824.jpg',
-    visibility: 'public',
-    downloadsAllowed: true,
-    fileSizeBytes: 490000000,
-    viewsCount: 680,
   },
 ];
 
@@ -156,8 +137,8 @@ let audioBayans: AudioBayan[] = [
     categoryUrdu: 'خطباتِ جمعہ',
     series: 'Friday Sermons 2026',
     seriesUrdu: 'خطباتِ جمعۃ المبارک ۲۰۲۶ء',
-    speaker: 'Dr. Muhammad Farooq',
-    speakerUrdu: 'ڈاکٹر محمد فاروق',
+    speaker: 'Mufti Faisal Hayat',
+    speakerUrdu: 'مفتی فیصل حیات',
     recordedDate: '2026-04-17',
     duration: '38:40',
     durationSeconds: 2320,
@@ -165,91 +146,28 @@ let audioBayans: AudioBayan[] = [
     fileSizeBytes: 28000000,
     downloadsCount: 1420,
   },
-  {
-    id: 'audio-02',
-    title: 'Purification of Heart: Guarding the Tongue from Slander and Backbiting',
-    titleUrdu: 'اصلاح و تزکیہ: زبان کی حفاظت اور غیبت و بہتان کے نقصانات',
-    titleArabic: 'تزكية النفس وحفظ اللسان عن الغيبة',
-    category: 'Tazkiyah',
-    categoryUrdu: 'اصلاح و تزکیہ',
-    series: 'Purification Series',
-    seriesUrdu: 'اصلاحِ باطن و روحانی تربیت',
-    speaker: 'Dr. Muhammad Farooq',
-    speakerUrdu: 'ڈاکٹر محمد فاروق',
-    recordedDate: '2026-04-10',
-    duration: '45:15',
-    durationSeconds: 2715,
-    audioUrl: 'https://cdn.islamicfinder.org/audio/quran/abdulbaset-mujawwad/002.mp3',
-    fileSizeBytes: 33000000,
-    downloadsCount: 1890,
-  },
-  {
-    id: 'audio-03',
-    title: 'Surah Al-Hujurat: Etiquettes of Social Life and Mutual Brotherhood',
-    titleUrdu: 'تفسیر سورۃ الحجرات: معاشرتی آداب اور اسلامی اخوت کے احکام',
-    titleArabic: 'تفسير سورة الحجرات وآداب الأخوة',
-    category: 'Tafseer',
-    categoryUrdu: 'تفسیرِ قرآن',
-    series: 'Quranic Pearls',
-    seriesUrdu: 'دروسِ فہمِ قرآن',
-    speaker: 'Dr. Muhammad Farooq',
-    speakerUrdu: 'ڈاکٹر محمد فاروق',
-    recordedDate: '2026-03-27',
-    duration: '52:10',
-    durationSeconds: 3130,
-    audioUrl: 'https://cdn.islamicfinder.org/audio/quran/abdulbaset-mujawwad/055.mp3',
-    fileSizeBytes: 38000000,
-    downloadsCount: 2340,
-  },
-  {
-    id: 'audio-04',
-    title: 'Prophetic Sunnahs of Daily Living: Sleep, Awakening, and Eating',
-    titleUrdu: 'روزمرہ مسنون معمولات: سونے، جاگنے اور کھانے کی نبوی سنتیں',
-    titleArabic: 'السنن النبوية في الحياة اليومية',
-    category: 'Sunnah & Adab',
-    categoryUrdu: 'سنت و اخلاق',
-    series: 'Living the Sunnah',
-    seriesUrdu: 'احیائے سنت و آدابِ معاشرت',
-    speaker: 'Dr. Muhammad Farooq',
-    speakerUrdu: 'ڈاکٹر محمد فاروق',
-    recordedDate: '2026-03-15',
-    duration: '41:20',
-    durationSeconds: 2480,
-    audioUrl: 'https://cdn.islamicfinder.org/audio/quran/abdulbaset-mujawwad/067.mp3',
-    fileSizeBytes: 30000000,
-    downloadsCount: 1650,
-  },
-  {
-    id: 'audio-05',
-    title: 'Supplications of the Prophets in the Quran: Seeking Forgiveness and Refuge',
-    titleUrdu: 'قرآنی دعائیں: انبیاء علیہم السلام کی مناجات اور استغفار کے اسباق',
-    titleArabic: 'أدعية الأنبياء في القرآن الكريم',
-    category: 'Dua & Munajat',
-    categoryUrdu: 'دعائیں و مناجات',
-    series: 'Supplication Pearls',
-    seriesUrdu: 'مجموعۂ مناجات و دعائے ماثورہ',
-    speaker: 'Dr. Muhammad Farooq',
-    speakerUrdu: 'ڈاکٹر محمد فاروق',
-    recordedDate: '2026-03-05',
-    duration: '34:50',
-    durationSeconds: 2090,
-    audioUrl: 'https://cdn.islamicfinder.org/audio/quran/abdulbaset-mujawwad/112.mp3',
-    fileSizeBytes: 25000000,
-    downloadsCount: 3120,
-  },
 ];
 
 let auditLogs: AuditLogItem[] = [
   {
     id: 'log-1',
-    action: 'Session Created',
+    action: 'Taleem Ud Deen Academy Platform Initialized',
     timestamp: new Date().toISOString(),
-    user: 'Scholar (Host)',
-    details: 'Scheduled Bayan: Tafseer Surah Al-Kahf',
+    user: 'System Administrator',
+    details: 'Initial live studio, YouTube sync, and Google Sheets CMS readiness',
   },
 ];
 
-// In-Memory WebSocket Rooms for WebRTC signaling and real-time live interaction
+// Q&A Question item structure
+export interface ModeratedQuestion {
+  id: string;
+  senderName: string;
+  text: string;
+  timestamp: string;
+  status: 'pending' | 'approved' | 'rejected' | 'answered';
+  pinned: boolean;
+}
+
 interface RoomAttendee {
   id: string;
   name: string;
@@ -265,9 +183,7 @@ interface ActiveRoom {
   isLive: boolean;
   isScreenSharing: boolean;
   isRecording: boolean;
-  studioMode: StudioMode;
-  pipPosition: PipPosition;
-  pipVisible: boolean;
+  questionsOpen: boolean;
   hostWs: WebSocket | null;
   hostName: string;
   attendees: Map<string, RoomAttendee>;
@@ -278,9 +194,8 @@ interface ActiveRoom {
     text: string;
     timestamp: string;
     isHost: boolean;
-    isQuestion?: boolean;
-    isAnswered?: boolean;
   }>;
+  questionsQueue: ModeratedQuestion[];
 }
 
 const rooms = new Map<string, ActiveRoom>();
@@ -293,19 +208,17 @@ function getOrCreateRoom(code: string, bayanId: string = ''): ActiveRoom {
       isLive: false,
       isScreenSharing: false,
       isRecording: false,
-      studioMode: 'camera',
-      pipPosition: 'bottom-right',
-      pipVisible: true,
+      questionsOpen: true,
       hostWs: null,
       hostName: '',
       attendees: new Map(),
       messages: [],
+      questionsQueue: [],
     });
   }
   return rooms.get(code)!;
 }
 
-// Attach WebSocket Server to HTTP server
 const wss = new WebSocketServer({ server, path: '/ws/bayan' });
 
 wss.on('connection', (ws: WebSocket) => {
@@ -327,19 +240,18 @@ wss.on('connection', (ws: WebSocket) => {
           name: payload.name || 'Attendee',
           role: payload.role || 'attendee',
           ws,
-          isMuted: payload.role === 'attendee', // Attendees muted by default
+          isMuted: payload.role === 'attendee',
           handRaised: false,
         };
 
         if (payload.role === 'host') {
           room.hostWs = ws;
-          room.hostName = payload.name || 'Scholar';
+          room.hostName = payload.name || 'Mufti Faisal Hayat';
           room.isLive = true;
         }
 
         room.attendees.set(currentUserId, attendee);
 
-        // Send current room state to joining participant
         const attendeeList = Array.from(room.attendees.values()).map((a) => ({
           id: a.id,
           name: a.name,
@@ -347,6 +259,11 @@ wss.on('connection', (ws: WebSocket) => {
           isMuted: a.isMuted,
           handRaised: a.handRaised,
         }));
+
+        // Send room state. For non-hosts, only send APPROVED or PINNED questions.
+        const approvedQuestions = room.questionsQueue.filter(
+          (q) => q.status === 'approved' || q.status === 'answered' || q.pinned
+        );
 
         ws.send(
           JSON.stringify({
@@ -356,63 +273,118 @@ wss.on('connection', (ws: WebSocket) => {
               isLive: room.isLive,
               isScreenSharing: room.isScreenSharing,
               isRecording: room.isRecording,
-              studioMode: room.studioMode,
-              pipPosition: room.pipPosition,
-              pipVisible: room.pipVisible,
+              questionsOpen: room.questionsOpen,
               attendees: attendeeList,
               messages: room.messages,
+              questions: payload.role === 'host' ? room.questionsQueue : approvedQuestions,
             },
           })
         );
 
-        // Notify other participants of new attendee
-        broadcastToRoom(room, {
-          type: 'attendee-joined',
-          payload: {
-            id: attendee.id,
-            name: attendee.name,
-            role: attendee.role,
-            isMuted: attendee.isMuted,
-            handRaised: attendee.handRaised,
+        broadcastToRoom(
+          room,
+          {
+            type: 'attendee-joined',
+            payload: {
+              id: attendee.id,
+              name: attendee.name,
+              role: attendee.role,
+              isMuted: attendee.isMuted,
+              handRaised: attendee.handRaised,
+            },
           },
-        }, currentUserId);
+          currentUserId
+        );
 
-        // Update active count on session
         const session = bayanSessions.find((s) => s.roomCode === roomCode);
         if (session) {
           session.activeAttendeesCount = room.attendees.size;
         }
-      } else if (type === 'webrtc-signal') {
-        // Forward WebRTC SDP offer, answer, or ICE candidate to destination peer
+      } else if (type === 'submit-question') {
+        // Listener submits a written question for moderation
+        const room = rooms.get(currentRoomCode);
+        if (!room) return;
+        if (!room.questionsOpen) {
+          ws.send(JSON.stringify({ type: 'question-error', message: 'Questions are currently closed by host.' }));
+          return;
+        }
+
+        const newQ: ModeratedQuestion = {
+          id: 'q-' + Math.random().toString(36).substring(2, 9),
+          senderName: payload.senderName || 'Anonymous',
+          text: payload.text,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          status: 'pending',
+          pinned: false,
+        };
+
+        room.questionsQueue.unshift(newQ);
+
+        // Send update to host with full queue
+        if (room.hostWs && room.hostWs.readyState === WebSocket.OPEN) {
+          room.hostWs.send(
+            JSON.stringify({
+              type: 'questions-queue-update',
+              payload: { questions: room.questionsQueue },
+            })
+          );
+        }
+
+        // Send acknowledgment to sender
+        ws.send(
+          JSON.stringify({
+            type: 'question-submitted',
+            payload: newQ,
+          })
+        );
+      } else if (type === 'moderate-question') {
+        // Host approves, rejects, marks answered, pins, or deletes
         const room = rooms.get(currentRoomCode);
         if (!room) return;
 
-        const targetId = payload.targetId;
-        if (targetId) {
-          const target = room.attendees.get(targetId);
-          if (target && target.ws.readyState === WebSocket.OPEN) {
-            target.ws.send(
-              JSON.stringify({
-                type: 'webrtc-signal',
-                payload: {
-                  senderId: currentUserId,
-                  signal: payload.signal,
-                  isScreenShare: payload.isScreenShare,
-                },
-              })
-            );
+        const { questionId, action } = payload;
+        const qIndex = room.questionsQueue.findIndex((q) => q.id === questionId);
+        if (qIndex !== -1) {
+          if (action === 'approve') {
+            room.questionsQueue[qIndex].status = 'approved';
+          } else if (action === 'reject') {
+            room.questionsQueue[qIndex].status = 'rejected';
+          } else if (action === 'answer') {
+            room.questionsQueue[qIndex].status = 'answered';
+          } else if (action === 'pin') {
+            room.questionsQueue[qIndex].pinned = !room.questionsQueue[qIndex].pinned;
+          } else if (action === 'delete') {
+            room.questionsQueue.splice(qIndex, 1);
           }
-        } else {
-          // Broadcast signal to everyone else (e.g. host publishing stream)
-          broadcastToRoom(room, {
-            type: 'webrtc-signal',
-            payload: {
-              senderId: currentUserId,
-              signal: payload.signal,
-              isScreenShare: payload.isScreenShare,
-            },
-          }, currentUserId);
         }
+
+        // Broadcast approved questions to listeners
+        const approvedQuestions = room.questionsQueue.filter(
+          (q) => q.status === 'approved' || q.status === 'answered' || q.pinned
+        );
+
+        broadcastToRoom(room, {
+          type: 'approved-questions-update',
+          payload: { questions: approvedQuestions },
+        });
+
+        // Send full queue update to host
+        if (room.hostWs && room.hostWs.readyState === WebSocket.OPEN) {
+          room.hostWs.send(
+            JSON.stringify({
+              type: 'questions-queue-update',
+              payload: { questions: room.questionsQueue },
+            })
+          );
+        }
+      } else if (type === 'toggle-questions-open') {
+        const room = rooms.get(currentRoomCode);
+        if (!room) return;
+        room.questionsOpen = payload.questionsOpen;
+        broadcastToRoom(room, {
+          type: 'questions-open-status',
+          payload: { questionsOpen: room.questionsOpen },
+        });
       } else if (type === 'chat-message') {
         const room = rooms.get(currentRoomCode);
         if (!room) return;
@@ -424,8 +396,6 @@ wss.on('connection', (ws: WebSocket) => {
           text: payload.text,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           isHost: payload.isHost || false,
-          isQuestion: payload.isQuestion || false,
-          isAnswered: false,
         };
 
         room.messages.push(chatMsg);
@@ -433,48 +403,6 @@ wss.on('connection', (ws: WebSocket) => {
           type: 'chat-message',
           payload: chatMsg,
         });
-      } else if (type === 'raise-hand') {
-        const room = rooms.get(currentRoomCode);
-        if (!room) return;
-        const attendee = room.attendees.get(currentUserId);
-        if (attendee) {
-          attendee.handRaised = payload.handRaised;
-          broadcastToRoom(room, {
-            type: 'attendee-updated',
-            payload: {
-              id: attendee.id,
-              handRaised: attendee.handRaised,
-            },
-          });
-        }
-      } else if (type === 'mute-attendee') {
-        // Only host can mute others
-        const room = rooms.get(currentRoomCode);
-        if (!room) return;
-        const target = room.attendees.get(payload.attendeeId);
-        if (target) {
-          target.isMuted = payload.isMuted;
-          broadcastToRoom(room, {
-            type: 'attendee-updated',
-            payload: {
-              id: target.id,
-              isMuted: target.isMuted,
-            },
-          });
-        }
-      } else if (type === 'remove-attendee') {
-        const room = rooms.get(currentRoomCode);
-        if (!room) return;
-        const target = room.attendees.get(payload.attendeeId);
-        if (target && target.ws.readyState === WebSocket.OPEN) {
-          target.ws.send(JSON.stringify({ type: 'removed-by-host' }));
-          target.ws.close();
-          room.attendees.delete(payload.attendeeId);
-          broadcastToRoom(room, {
-            type: 'attendee-left',
-            payload: { id: payload.attendeeId },
-          });
-        }
       } else if (type === 'bayan-status-update') {
         const room = rooms.get(currentRoomCode);
         if (!room) return;
@@ -490,26 +418,9 @@ wss.on('connection', (ws: WebSocket) => {
             isRecording: room.isRecording,
           },
         });
-      } else if (type === 'studio-mode-changed') {
-        const room = rooms.get(currentRoomCode);
-        if (!room) return;
-        if (payload.studioMode) room.studioMode = payload.studioMode;
-        if (payload.pipPosition) room.pipPosition = payload.pipPosition;
-        if (payload.pipVisible !== undefined) room.pipVisible = payload.pipVisible;
-        if (payload.isScreenSharing !== undefined) room.isScreenSharing = payload.isScreenSharing;
-
-        broadcastToRoom(room, {
-          type: 'studio-mode-changed',
-          payload: {
-            studioMode: room.studioMode,
-            pipPosition: room.pipPosition,
-            pipVisible: room.pipVisible,
-            isScreenSharing: room.isScreenSharing,
-          },
-        });
       }
     } catch (err) {
-      console.error('WebSocket message parsing error:', err);
+      console.error('WebSocket message error:', err);
     }
   });
 
@@ -549,6 +460,7 @@ function broadcastToRoom(room: ActiveRoom, msg: any, excludeId?: string) {
 app.get('/api/health', (_req: Request, res: Response) => {
   res.json({
     status: 'ok',
+    appName: 'TALEEM UD DEEN ACADEMY',
     uptimeSeconds: Math.floor(process.uptime()),
     timestamp: new Date().toISOString(),
     activeRooms: rooms.size,
@@ -568,7 +480,7 @@ app.post('/api/site-config', (req: Request, res: Response) => {
     action: 'Site Settings Updated',
     timestamp: new Date().toISOString(),
     user: 'Administrator',
-    details: 'Updated branding or speaker information',
+    details: 'Updated Taleem Ud Deen Academy site branding',
   });
   res.json({ success: true, siteConfig });
 });
@@ -605,9 +517,9 @@ app.post('/api/sessions', (req: Request, res: Response) => {
 
   auditLogs.unshift({
     id: 'log-' + Date.now(),
-    action: 'Bayan Created',
+    action: 'Bayan Scheduled',
     timestamp: new Date().toISOString(),
-    user: 'Scholar / Admin',
+    user: 'Mufti Faisal Hayat / Admin',
     details: `Created: ${newSession.titleUrdu} (${newSession.roomCode})`,
   });
 
@@ -658,7 +570,7 @@ app.post('/api/recordings', (req: Request, res: Response) => {
     action: 'Recording Saved',
     timestamp: new Date().toISOString(),
     user: 'Scholar',
-    details: `Lecture: ${newRecording.titleUrdu}`,
+    details: `Saved: ${newRecording.titleUrdu}`,
   });
 
   res.status(201).json(newRecording);
@@ -671,14 +583,6 @@ app.delete('/api/recordings/:id', (req: Request, res: Response) => {
   }
 
   const removed = recordedBayans.splice(index, 1)[0];
-  auditLogs.unshift({
-    id: 'log-' + Date.now(),
-    action: 'Recording Deleted',
-    timestamp: new Date().toISOString(),
-    user: 'Administrator',
-    details: `Deleted: ${removed.titleUrdu}`,
-  });
-
   res.json({ success: true, removedId: removed.id });
 });
 
@@ -713,24 +617,85 @@ app.get('/api/audit-logs', (_req: Request, res: Response) => {
   res.json(auditLogs);
 });
 
+// Google Sheets CMS Endpoints
+app.get('/api/sheets/state', (_req: Request, res: Response) => {
+  res.json(sheetsService.getState());
+});
+
+app.post('/api/sheets/config', (req: Request, res: Response) => {
+  const updated = sheetsService.updateConfig(req.body);
+  auditLogs.unshift({
+    id: 'log-' + Date.now(),
+    action: 'Google Sheets Config Updated',
+    timestamp: new Date().toISOString(),
+    user: 'Administrator',
+    details: `Updated spreadsheet ID: ${req.body.spreadsheetId || 'unchanged'}`,
+  });
+  res.json(updated);
+});
+
+app.post('/api/sheets/sync', (_req: Request, res: Response) => {
+  const result = sheetsService.performSync();
+  auditLogs.unshift({
+    id: 'log-' + Date.now(),
+    action: 'Google Sheets CMS Sync Triggered',
+    timestamp: new Date().toISOString(),
+    user: 'Administrator',
+    details: result.message,
+  });
+  res.json({ ...result, state: sheetsService.getState() });
+});
+
+// YouTube Integration REST Endpoints
+app.get('/api/youtube/state', (_req: Request, res: Response) => {
+  res.json(youtubeService.getState());
+});
+
+app.post('/api/youtube/config', (req: Request, res: Response) => {
+  const updated = youtubeService.updateConfig(req.body);
+  res.json(updated);
+});
+
+app.post('/api/youtube/sync', async (_req: Request, res: Response) => {
+  const result = await youtubeService.performSync();
+  res.json({ ...result, state: youtubeService.getState() });
+});
+
+app.patch('/api/youtube/videos/:id/featured', (req: Request, res: Response) => {
+  const video = youtubeService.toggleVideoFeatured(req.params.id);
+  if (!video) return res.status(404).json({ error: 'Video not found' });
+  res.json(video);
+});
+
+app.patch('/api/youtube/videos/:id/hidden', (req: Request, res: Response) => {
+  const video = youtubeService.toggleVideoHidden(req.params.id);
+  if (!video) return res.status(404).json({ error: 'Video not found' });
+  res.json(video);
+});
+
+app.patch('/api/youtube/playlists/:id/hidden', (req: Request, res: Response) => {
+  const playlist = youtubeService.togglePlaylistHidden(req.params.id);
+  if (!playlist) return res.status(404).json({ error: 'Playlist not found' });
+  res.json(playlist);
+});
+
 app.post('/api/auth/login', (req: Request, res: Response) => {
   const { username, password } = req.body;
-  // Secure server-side check with default scholar admin credential
   if (
-    (username === 'admin' || username === 'scholar@islamic-bayan.online') &&
+    (username === 'admin' || username === 'info@taleemuddeen.academy') &&
     (password === 'BayanAdmin2026!' || password === 'admin')
   ) {
     res.json({
       success: true,
-      token: 'jwt-auth-scholar-' + Date.now(),
+      token: 'jwt-auth-taleemuddeen-' + Date.now(),
       user: {
         name: siteConfig.speakerName,
-        email: 'scholar@islamic-bayan.online',
+        email: 'info@taleemuddeen.academy',
         role: 'admin',
       },
     });
   } else {
-    res.status(401).json({ error: 'Invalid scholar credentials' });
+    res.status(401).json({ error: 'Invalid admin credentials' });
   }
 });
 
@@ -751,7 +716,7 @@ async function startServer() {
   }
 
   server.listen(PORT, '0.0.0.0', () => {
-    console.log(`Islamic Bayan Server running on http://0.0.0.0:${PORT}`);
+    console.log(`Taleem Ud Deen Academy Server running on http://0.0.0.0:${PORT}`);
   });
 }
 

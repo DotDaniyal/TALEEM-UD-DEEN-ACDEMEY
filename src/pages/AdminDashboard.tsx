@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { generateRoomCode, generateShareableLinks } from '../utils/bayan-logic';
+import { generateRoomCode } from '../utils/bayan-logic';
+import { AdminYouTubeIntegration } from '../components/AdminYouTubeIntegration';
 import {
   Video,
   Plus,
@@ -15,6 +16,9 @@ import {
   Share2,
   Copy,
   ExternalLink,
+  Tv,
+  Database,
+  RefreshCw,
 } from 'lucide-react';
 
 export const AdminDashboard: React.FC = () => {
@@ -34,7 +38,36 @@ export const AdminDashboard: React.FC = () => {
     setCurrentView,
   } = useApp();
 
-  const [activeTab, setActiveTab] = useState<'bayans' | 'recordings' | 'branding' | 'system'>('bayans');
+  const [activeTab, setActiveTab] = useState<'bayans' | 'recordings' | 'youtube' | 'sheets' | 'branding' | 'system'>('bayans');
+  const [sheetsState, setSheetsState] = useState<any>(null);
+  const [sheetsSyncing, setSheetsSyncing] = useState(false);
+
+  const fetchSheetsState = async () => {
+    try {
+      const res = await fetch('/api/sheets/state');
+      if (res.ok) {
+        const data = await res.json();
+        setSheetsState(data);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleTriggerSheetsSync = async () => {
+    setSheetsSyncing(true);
+    try {
+      const res = await fetch('/api/sheets/sync', { method: 'POST' });
+      if (res.ok) {
+        const data = await res.json();
+        setSheetsState(data.state);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSheetsSyncing(false);
+    }
+  };
 
   // Form State for New Bayan
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -170,6 +203,21 @@ export const AdminDashboard: React.FC = () => {
         </button>
 
         <button
+          onClick={() => {
+            setActiveTab('sheets');
+            fetchSheetsState();
+          }}
+          className={`py-2 px-4 rounded-md transition-colors cursor-pointer flex items-center gap-2 ${
+            activeTab === 'sheets'
+              ? 'bg-[#0F382A] text-white font-semibold'
+              : 'text-stone-600 hover:text-stone-900 bg-stone-100'
+          }`}
+        >
+          <Database className="w-3.5 h-3.5 text-[#C5A059]" />
+          <span>گوگل شیٹس CMS (7 ورک شیٹس)</span>
+        </button>
+
+        <button
           onClick={() => setActiveTab('branding')}
           className={`py-2 px-4 rounded-md transition-colors cursor-pointer flex items-center gap-2 ${
             activeTab === 'branding'
@@ -193,6 +241,88 @@ export const AdminDashboard: React.FC = () => {
           <span>سسٹم ہیلتھ و لاگز</span>
         </button>
       </div>
+
+      {/* TAB: YOUTUBE INTEGRATION */}
+      {activeTab === 'youtube' && <AdminYouTubeIntegration />}
+
+      {/* TAB: GOOGLE SHEETS CMS */}
+      {activeTab === 'sheets' && (
+        <div className="space-y-6">
+          <div className="bg-white rounded-xl border border-stone-200 p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs uppercase tracking-wider text-[#C5A059] font-sans font-bold">
+                  GOOGLE SHEETS CLOUD CMS
+                </span>
+                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                <span className="text-xs text-emerald-700 font-semibold font-sans">
+                  7 Worksheets Connected
+                </span>
+              </div>
+              <h3 className="text-xl font-urdu font-bold text-[#0F382A] mt-1">
+                گوگل شیٹس کلاؤڈ کنٹینٹ مینجمنٹ سسٹم
+              </h3>
+              <p className="text-xs text-stone-600 font-sans mt-0.5">
+                فائل انضمام: {sheetsState?.config?.spreadsheetId || '1TaleemUdDeenAcademy_GoogleSheetsCMS_2026'}
+              </p>
+            </div>
+
+            <button
+              onClick={handleTriggerSheetsSync}
+              disabled={sheetsSyncing}
+              className="px-4 py-2.5 bg-[#0F382A] hover:bg-[#0B281E] text-white text-xs font-semibold rounded-md transition-colors flex items-center gap-2 cursor-pointer shrink-0 disabled:bg-stone-300"
+            >
+              <RefreshCw className={`w-4 h-4 text-[#C5A059] ${sheetsSyncing ? 'animate-spin' : ''}`} />
+              <span>{sheetsSyncing ? 'مزامنہ جاری ہے...' : '2-Way سنک ٹریگر کریں'}</span>
+            </button>
+          </div>
+
+          {/* 7 Logical Worksheets Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {(sheetsState?.worksheets || [
+              { name: 'Videos', rowCount: 120, colCount: 14, fields: ['youtube_id', 'title', 'duration', 'media_url'] },
+              { name: 'Playlists', rowCount: 18, colCount: 7, fields: ['playlist_id', 'title', 'video_count'] },
+              { name: 'Playlist Videos', rowCount: 240, colCount: 4, fields: ['playlist_id', 'video_id', 'position'] },
+              { name: 'Sync Settings', rowCount: 12, colCount: 4, fields: ['key', 'value', 'updated_at'] },
+              { name: 'Sync Logs', rowCount: 45, colCount: 5, fields: ['id', 'timestamp', 'status', 'message'] },
+              { name: 'Media Storage', rowCount: 32, colCount: 7, fields: ['id', 'video_id', 'storage_provider', 'cdn_url'] },
+              { name: 'Import Jobs', rowCount: 10, colCount: 7, fields: ['id', 'job_type', 'status', 'progress'] },
+            ]).map((ws: any) => (
+              <div key={ws.name} className="bg-white rounded-xl border border-stone-200 p-5 shadow-xs space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-bold font-sans text-[#0F382A]">
+                    📋 Worksheet: {ws.name}
+                  </h4>
+                  <span className="text-[10px] bg-emerald-50 text-emerald-800 font-mono px-2 py-0.5 rounded border border-emerald-200 font-bold">
+                    Active
+                  </span>
+                </div>
+
+                <div className="text-xs text-stone-600 font-mono flex items-center justify-between pt-1">
+                  <span>ریکارڈز: {ws.rowCount} rows</span>
+                  <span>کالمز: {ws.colCount} cols</span>
+                </div>
+
+                <div className="pt-2 border-t border-stone-100 space-y-1">
+                  <span className="text-[10px] uppercase text-stone-400 font-sans tracking-wider block">
+                    کالم فیلڈز:
+                  </span>
+                  <div className="flex flex-wrap gap-1 text-[10px] font-mono text-stone-600">
+                    {ws.fields.slice(0, 4).map((f: string) => (
+                      <span key={f} className="bg-stone-100 px-1.5 py-0.5 rounded">
+                        {f}
+                      </span>
+                    ))}
+                    {ws.fields.length > 4 && (
+                      <span className="text-stone-400">+{ws.fields.length - 4} more</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* TAB 1: BAYANS MANAGEMENT */}
       {activeTab === 'bayans' && (
