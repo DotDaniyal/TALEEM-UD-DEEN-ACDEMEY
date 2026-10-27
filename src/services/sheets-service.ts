@@ -4,7 +4,9 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const DATA_DIR = path.join(__dirname, '../../data');
+
+const isVercel = process.env.VERCEL === '1';
+const DATA_DIR = isVercel ? '/tmp/data' : path.join(__dirname, '../../data');
 const SHEETS_STORE_FILE = path.join(DATA_DIR, 'sheets_cms_store.json');
 
 export interface GoogleSheetsConfig {

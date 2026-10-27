@@ -11,16 +11,18 @@ import {
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const DATA_DIR = path.join(__dirname, '../../data');
+
+const isVercel = process.env.VERCEL === '1';
+const DATA_DIR = isVercel ? '/tmp/data' : path.join(__dirname, '../../data');
 const STORE_PATH = path.join(DATA_DIR, 'youtube_store.json');
 
 // Ensure data directory exists
-if (!fs.existsSync(DATA_DIR)) {
-  try {
+try {
+  if (!fs.existsSync(DATA_DIR)) {
     fs.mkdirSync(DATA_DIR, { recursive: true });
-  } catch (err) {
-    console.error('Could not create data directory:', err);
   }
+} catch (err) {
+  console.warn('Could not create data directory, using memory store:', err);
 }
 
 // Initial Seed Channel Configuration for Mufti Faisal Hayat

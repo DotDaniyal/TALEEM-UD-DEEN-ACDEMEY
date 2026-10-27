@@ -459,6 +459,10 @@ export const LiveBayanStudio: React.FC = () => {
       }
     };
 
+    ws.onerror = () => {
+      setConnectionStatus('disconnected');
+    };
+
     ws.onclose = () => {
       setConnectionStatus('disconnected');
     };
@@ -472,37 +476,102 @@ export const LiveBayanStudio: React.FC = () => {
     };
   }, [selectedRoomCode, isAdmin]);
 
-  // Submit Listener Question
-  const handleSubmitQuestion = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!questionInput.trim() || !wsRef.current) return;
+  // HTTP Polling fallback when WebSocket is disconnected or unsupported on serverless host
+  useEffect(() => {
+    let pollTimer: any = null;
 
-    wsRef.current.send(
-      JSON.stringify({
-        type: 'submit-question',
-        roomCode: selectedRoomCode,
-        payload: {
-          senderName: 'حاضرِ مجلس',
-          text: questionInput.trim(),
-        },
-      })
-    );
+    const fetchRoomStateRest = async () => {
+      try {
+        const role = isAdmin ? 'host' : 'attendee';
+        const res = await fetch(`/api/rooms/${selectedRoomCode}/state?role=${role}`);
+        if (res.ok) {
+          const data = await res.json();
+          setQuestionsQueue(data.questions || []);
+          setMessages(data.messages || []);
+          setIsLive(data.isLive);
+          setIsScreenSharing(data.isScreenSharing);
+          setIsRecording(data.isRecording);
+          if (data.questionsOpen !== undefined) setQuestionsOpen(data.questionsOpen);
+          setConnectionStatus('connected');
+        }
+      } catch {
+        // Quiet fallback
+      }
+    };
+
+    if (connectionStatus === 'disconnected' || !wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+      fetchRoomStateRest();
+      pollTimer = setInterval(fetchRoomStateRest, 3000);
+    }
+
+    return () => {
+      if (pollTimer) clearInterval(pollTimer);
+    };
+  }, [selectedRoomCode, isAdmin, connectionStatus]);
+
+  // Submit Listener Question with REST Fallback
+  const handleSubmitQuestion = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!questionInput.trim()) return;
+
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(
+        JSON.stringify({
+          type: 'submit-question',
+          roomCode: selectedRoomCode,
+          payload: {
+            senderName: 'حاضرِ مجلس',
+            text: questionInput.trim(),
+          },
+        })
+      );
+    } else {
+      try {
+        await fetch(`/api/rooms/${selectedRoomCode}/submit-question`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            senderName: 'حاضرِ مجلس',
+            text: questionInput.trim(),
+          }),
+        });
+      } catch (err) {
+        console.error('Submit question error:', err);
+      }
+    }
 
     setQuestionInput('');
     setQuestionSubmittedMsg(true);
     setTimeout(() => setQuestionSubmittedMsg(false), 4000);
   };
 
-  // Host Q&A Moderator Action
-  const handleModerateQuestion = (questionId: string, action: 'approve' | 'reject' | 'answer' | 'pin' | 'delete') => {
-    if (!isAdmin || !wsRef.current) return;
-    wsRef.current.send(
-      JSON.stringify({
-        type: 'moderate-question',
-        roomCode: selectedRoomCode,
-        payload: { questionId, action },
-      })
-    );
+  // Host Q&A Moderator Action with REST Fallback
+  const handleModerateQuestion = async (questionId: string, action: 'approve' | 'reject' | 'answer' | 'pin' | 'delete') => {
+    if (!isAdmin) return;
+
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(
+        JSON.stringify({
+          type: 'moderate-question',
+          roomCode: selectedRoomCode,
+          payload: { questionId, action },
+        })
+      );
+    } else {
+      try {
+        const res = await fetch(`/api/rooms/${selectedRoomCode}/moderate-question`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ questionId, action }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.questions) setQuestionsQueue(data.questions);
+        }
+      } catch (err) {
+        console.error('Moderate question error:', err);
+      }
+    }
   };
 
   // Host Toggle Questions Open/Close

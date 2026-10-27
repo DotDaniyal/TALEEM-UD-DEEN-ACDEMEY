@@ -699,9 +699,110 @@ app.post('/api/auth/login', (req: Request, res: Response) => {
   }
 });
 
+// Live Bayan Room REST Endpoints (HTTP Fallback for Serverless environments)
+app.get('/api/rooms/:code/state', (req: Request, res: Response) => {
+  const roomCode = req.params.code;
+  const role = (req.query.role as string) || 'attendee';
+  const bayanId = (req.query.bayanId as string) || '';
+  const room = getOrCreateRoom(roomCode, bayanId);
+
+  const approvedQuestions = room.questionsQueue.filter(
+    (q) => q.status === 'approved' || q.status === 'answered' || q.pinned
+  );
+
+  res.json({
+    roomCode,
+    isLive: room.isLive,
+    isScreenSharing: room.isScreenSharing,
+    isRecording: room.isRecording,
+    questionsOpen: room.questionsOpen,
+    activeAttendeesCount: room.attendees.size,
+    hostName: room.hostName || siteConfig.speakerName,
+    messages: room.messages,
+    questions: role === 'host' ? room.questionsQueue : approvedQuestions,
+  });
+});
+
+app.post('/api/rooms/:code/submit-question', (req: Request, res: Response) => {
+  const roomCode = req.params.code;
+  const room = getOrCreateRoom(roomCode);
+  if (!room.questionsOpen) {
+    return res.status(400).json({ error: 'Questions are currently closed by host.' });
+  }
+
+  const { senderName, text } = req.body;
+  if (!text || typeof text !== 'string' || !text.trim()) {
+    return res.status(400).json({ error: 'Question text is required.' });
+  }
+
+  const newQ: ModeratedQuestion = {
+    id: 'q-' + Math.random().toString(36).substring(2, 9),
+    senderName: senderName || 'Anonymous',
+    text: text.trim(),
+    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    status: 'pending',
+    pinned: false,
+  };
+
+  room.questionsQueue.unshift(newQ);
+
+  if (room.hostWs && room.hostWs.readyState === WebSocket.OPEN) {
+    room.hostWs.send(
+      JSON.stringify({
+        type: 'questions-queue-update',
+        payload: { questions: room.questionsQueue },
+      })
+    );
+  }
+
+  res.status(201).json(newQ);
+});
+
+app.post('/api/rooms/:code/moderate-question', (req: Request, res: Response) => {
+  const roomCode = req.params.code;
+  const room = getOrCreateRoom(roomCode);
+  const { questionId, action } = req.body;
+
+  const qIndex = room.questionsQueue.findIndex((q) => q.id === questionId);
+  if (qIndex !== -1) {
+    if (action === 'approve') {
+      room.questionsQueue[qIndex].status = 'approved';
+    } else if (action === 'reject') {
+      room.questionsQueue[qIndex].status = 'rejected';
+    } else if (action === 'answer') {
+      room.questionsQueue[qIndex].status = 'answered';
+    } else if (action === 'pin') {
+      room.questionsQueue[qIndex].pinned = !room.questionsQueue[qIndex].pinned;
+    } else if (action === 'delete') {
+      room.questionsQueue.splice(qIndex, 1);
+    }
+  }
+
+  res.json({ success: true, questions: room.questionsQueue });
+});
+
+app.post('/api/rooms/:code/status', (req: Request, res: Response) => {
+  const roomCode = req.params.code;
+  const room = getOrCreateRoom(roomCode);
+  const { isLive, isScreenSharing, isRecording, questionsOpen } = req.body;
+
+  if (isLive !== undefined) room.isLive = isLive;
+  if (isScreenSharing !== undefined) room.isScreenSharing = isScreenSharing;
+  if (isRecording !== undefined) room.isRecording = isRecording;
+  if (questionsOpen !== undefined) room.questionsOpen = questionsOpen;
+
+  res.json({
+    success: true,
+    isLive: room.isLive,
+    isScreenSharing: room.isScreenSharing,
+    isRecording: room.isRecording,
+    questionsOpen: room.questionsOpen,
+  });
+});
+
 // Setup Vite middleware in dev or static files in production
 async function startServer() {
-  if (process.env.NODE_ENV !== 'production') {
+  if (process.env.NODE_ENV !== 'production' && process.env.VERCEL !== '1') {
     const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: { middlewareMode: true },
@@ -715,12 +816,18 @@ async function startServer() {
     });
   }
 
-  server.listen(PORT, '0.0.0.0', () => {
-    console.log(`Taleem Ud Deen Academy Server running on http://0.0.0.0:${PORT}`);
+  if (process.env.VERCEL !== '1') {
+    server.listen(PORT, '0.0.0.0', () => {
+      console.log(`Taleem Ud Deen Academy Server running on http://0.0.0.0:${PORT}`);
+    });
+  }
+}
+
+if (process.env.VERCEL !== '1') {
+  startServer().catch((err) => {
+    console.error('Failed to start server:', err);
+    process.exit(1);
   });
 }
 
-startServer().catch((err) => {
-  console.error('Failed to start server:', err);
-  process.exit(1);
-});
+export default app;
